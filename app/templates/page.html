@@ -1,0 +1,30 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web RTC</title>
+    <link rel="stylesheet" href="{% static 'text/css' %}" />
+</head>
+<body>
+
+    <input type="text" id="ice" placeholder="ICE Candidate"/>
+    <button id="connect">Connect</button>
+    <br>
+
+    <input type="text" id="message" placeholder="Message"/>
+    <button id="send">Send</button>
+    <br>
+
+    <video id="vdo" width="360px" height="360px" controls autoplay></video>
+
+    <ul>
+
+    </ul>
+
+    <script src="{% static 'page.js' %}" type="text/javascript"></script>
+
+</body>
+</html>
