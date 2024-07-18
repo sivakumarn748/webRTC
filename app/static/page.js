@@ -1,58 +1,91 @@
 var ul = document.querySelector("ul");
 
-var iceInput = document.querySelector("#ice");
-var connect = document.querySelector("#connect");
+var IDInput = document.querySelector("#ice");
+var connectBtn = document.querySelector("#connect");
+var callBtn = document.querySelector("#call");
 
 var message = document.querySelector("#message");
-var send = document.querySelector("#send");
+var sendBtn = document.querySelector("#send");
 
 var vdo = document.querySelector("#vdo");
-vdo.style.borderColor = "red";
-vdo.style.borderWidth = "10px";
 
 var addmsg = (msg) => ul.innerHTML = `<li>${msg}</li>` + ul.innerHTML;
 
-var lc = new RTCPeerConnection({
-    iceServers: [
-        {
-          urls: "stun:stun.relay.metered.ca:80",
-        },
-        {
-          urls: "turn:global.relay.metered.ca:80",
-          username: "ce73328b9e0a9142a9f254d8",
-          credential: "MvkxqvW8pNLnkPJn",
-        },
-        {
-          urls: "turn:global.relay.metered.ca:443",
-          username: "ce73328b9e0a9142a9f254d8",
-          credential: "MvkxqvW8pNLnkPJn",
-        },
-    ],
+iceServers = {
+  iceServers: [
+    {
+      urls: "stun:stun.relay.metered.ca:80",
+    },
+    {
+      urls: "turn:global.relay.metered.ca:80",
+      username: "ce73328b9e0a9142a9f254d8",
+      credential: "MvkxqvW8pNLnkPJn",
+    },
+    {
+      urls: "turn:global.relay.metered.ca:80?transport=tcp",
+      username: "ce73328b9e0a9142a9f254d8",
+      credential: "MvkxqvW8pNLnkPJn",
+    },
+    {
+      urls: "turn:global.relay.metered.ca:443",
+      username: "ce73328b9e0a9142a9f254d8",
+      credential: "MvkxqvW8pNLnkPJn",
+    },
+    {
+      urls: "turns:global.relay.metered.ca:443?transport=tcp",
+      username: "ce73328b9e0a9142a9f254d8",
+      credential: "MvkxqvW8pNLnkPJn",
+    },
+  ]
+};
+
+var peer = new Peer();
+var conn;
+
+
+
+var Lstream;
+navigator.mediaDevices.getUserMedia({video:true,audio:true}).then(stream=>Lstream=stream);
+
+vdo.srcObject = Lstream;
+
+peer.on('open', function(id){
+  addmsg("My Id is : " + id);
 });
 
-const dc = lc.createDataChannel("channel");
+connectBtn.onclick = (event) => {
+  connect(IDInput.value);
+};
 
-dc.onmessage = e => addmsg("message : " + e.data);
-dc.onopen = e => addmsg("<b>Local Data channel conn opened.</b>");
+callBtn.onclick = (event) => {
+  addmsg("call btn")
+  peer.call(IDInput.value, Lstream);
+};
 
-lc.onicecandidate = e => addmsg("New Ice Cdt : " + JSON.stringify(lc.localDescription));
-
-lc.createOffer().then(o => lc.setLocalDescription(o)).then(a => addmsg("Local Description set sucessfully."));
-
-lc.ondatachannel = e => {
-    lc.dc = e.channel;
-    lc.dc.onopen = e => addmsg("<b>Remote Data channel conn opened.</b>")
-    lc.dc.onmessage = e => alert("Message : " +  e.data);
+sendBtn.onclick = (event) => {
+  conn.send(message.value);
 }
 
-connect.addEventListener('click', function(){
-    var offer = JSON.parse(iceInput.value);
-    lc.setRemoteDescription(offer).then(a => addmsg("<b>Offer Set</b>"));
-    lc.createAnswer().then(a => lc.setLocalDescription(a)).then(o => addmsg("Offer Created"));
-    navigator.mediaDevices.getUserMedia(constraints={video:true}).then(stream=>lc.addTrack(stream)).catch(error=>alert(error));
+function connect(id) {
+  conn = peer.connect(id);
+  // on open will be launch when you successfully connect to PeerServer
+  conn.on('open', function(){
+    // here you have conn.id
+    conn.send('hi!');
+  });
+}
+
+peer.on('connection', function(conn) {
+  conn.on('data', function(data){
+    // Will print 'hi!'
+    addmsg(data);
+  });
 });
 
-send.addEventListener('click', function(){
-    lc.dc.send(message.value);
+peer.on('call', (call)=>{
+  addmsg("call received");
+  call.answer(Lstream);
+  call.on("stream", (Rstream)=>{
+    vdo.srcObject = Rstream;
+  })
 });
-
